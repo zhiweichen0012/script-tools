@@ -136,7 +136,7 @@ if __name__ == "__main__":
             print("saving to:{}, len={}".format(new_path2, len(ids_val)))
             save_object(
                 dict(boxes=boxes_val, scores=boxes_val, indexes=ids_val),
-                new_path1)
+                new_path2)
         else:
             boxes_test = []
             scores_test = []
