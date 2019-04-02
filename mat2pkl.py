@@ -1,51 +1,165 @@
-import scipy.io
+# -*- encoding: utf-8 -*-
+'''
+@File    :   mat2pkl.py
+@Time    :   2019/04/02 17:05:14
+@Author  :   zhiwei
+'''
+
+# here put the import lib
+
+import scipy.io as sio
 import numpy as np
 import sys
 import os
 import os.path
-import pandas as pd
-import csv
 import pickle
+import argparse
 
-cwd = os.getcwd()
 
-print(cwd)
+def argsParser():
+    parser = argparse.ArgumentParser(description="mat2pkl")
+    parser.add_argument(
+        '--mode',
+        '-mode',
+        type=str,
+        required=True,
+        default='',
+        dest='mode',
+        help='train/test')
+    parser.add_argument(
+        '--file',
+        '-file',
+        type=str,
+        required=True,
+        default='',
+        dest='file',
+        help='mat_file')
 
-for root, dirs, files in os.walk(cwd):
-    for file in files:
-        if file.endswith('.mat'):
-            # print(root, file)
-            old_path = os.path.join(root, file)
+    args = parser.parse_args()
+    return args
 
-            print("loading:", old_path)
 
-            new_path = old_path[:-4] + ".pkl"
+mode = sys.argv[1]
+file = sys.argv[1]
 
-            print("saving to:", new_path)
 
-            data = scipy.io.loadmat(old_path)
+def save_object(obj, file_name, pickle_format=2):
+    file_name = os.path.abspath(file_name)
+    with open(file_name, 'wb') as f:
+        pickle.dump(obj, f, pickle_format)
 
-            print("type before saving:", type(data))
 
-            for key in list(data.keys()):
-                if "_" == key[0]:
-                    del data[key]
+if __name__ == "__main__":
+    args = argsParser()
+    mode = args.mode
+    file = args.file
+    print("mode:{}, file:{}".format(args.mode, args.file))
+    if args.mode == 'train':
+        with open('./mat/train.txt', 'r') as f:
+            data = f.readlines()
 
-            for k, v in data.items():
-                print("found data:", k, v.shape)
+        train_list = []
+        for line in data:
+            train_list.append(int(line.strip('\n')))
 
-            with open(new_path, 'wb') as f:
-                pickle.dump(data, f)
+    if file.endswith('.mat'):
+        boxes = []
+        scores = []
+        ids = []
+        root = './mat/'
+        old_path = file
 
-            with open(new_path, 'rb') as f:
-                data = pickle.load(f)
+        print("loading:", old_path)
+        if args.mode == 'train':
+            new_path1 = './mat/eb_voc_2007_train.pkl'
+            new_path2 = './mat/eb_voc_2007_val.pkl'
 
-            for k, v in data.items():
-                print("pkl data, should match above:", k, v.shape)
+            print("saving to:", new_path1)
+            print("saving to:", new_path2)
+        else:
+            new_path1 = './mat/eb_voc_2007_test.pkl'
+            print("saving to:", new_path1)
 
-            print("type after saving:", type(data))
-            print()
+        mat_data = sio.loadmat(old_path)
+        # print mat_data
+        # print 'here'
 
-            # mat = {k:v for k, v in data.items() if k[0] != '_'}
-            # data = pd.DataFrame({k: pd.Series(v[0]) for k, v in mat.items()})
-            # data.to_csv(new_path)
+        print("type before saving:", type(mat_data))
+
+        # for key in list(mat_data.keys()):
+        #     if "_" == key[0]:
+        #         del mat_data[key]
+        if args.mode == 'train':
+            boxes_train = []
+            scores_train = []
+            ids_train = []
+
+            boxes_val = []
+            scores_val = []
+            ids_val = []
+
+            print(mat_data.keys())
+            print(mat_data['images'].shape)
+            print(mat_data['boxes'].shape)
+            print(mat_data['boxScores'].shape)
+            for i in range(mat_data['images'].shape[1]):
+                id_in = int(mat_data['images'][0][i])
+                if id_in in train_list:
+
+                    boxes_data = mat_data['boxes'][0][i]
+                    scores_data = mat_data['boxScores'][0][i].astype(
+                        np.float32)
+
+                    boxes_data_ = boxes_data.astype(np.uint16) - 1
+                    boxes_data = boxes_data_[:, (1, 0, 3, 2)]
+                    id_data = int(mat_data['images'][0][i])
+
+                    boxes_train.append(boxes_data.astype(np.uint16))
+                    scores_train.append(scores_data.astype(np.float32))
+                    ids_train.append(id_data)
+                else:
+                    boxes_data = mat_data['boxes'][0][i]
+                    scores_data = mat_data['boxScores'][0][i].astype(
+                        np.float32)
+
+                    boxes_data_ = boxes_data.astype(np.uint16) - 1
+                    boxes_data = boxes_data_[:, (1, 0, 3, 2)]
+                    id_data = int(mat_data['images'][0][i])
+
+                    boxes_val.append(boxes_data.astype(np.uint16))
+                    scores_val.append(scores_data.astype(np.float32))
+                    ids_val.append(id_data)
+            print("saving to:{}, len={}".format(new_path1, len(ids_train)))
+            save_object(
+                dict(boxes=boxes_train, scores=boxes_train, indexes=ids_train),
+                new_path1)
+            print("saving to:{}, len={}".format(new_path2, len(ids_val)))
+            save_object(
+                dict(boxes=boxes_val, scores=boxes_val, indexes=ids_val),
+                new_path1)
+        else:
+            boxes_test = []
+            scores_test = []
+            ids_test = []
+
+            print(mat_data.keys())
+            print(mat_data['images'].shape)
+            print(mat_data['boxes'].shape)
+            print(mat_data['boxScores'].shape)
+            for i in range(mat_data['images'].shape[1]):
+                id_in = int(mat_data['images'][0][i])
+
+                boxes_data = mat_data['boxes'][0][i]
+                scores_data = mat_data['boxScores'][0][i].astype(np.float32)
+
+                boxes_data_ = boxes_data.astype(np.uint16) - 1
+                boxes_data = boxes_data_[:, (1, 0, 3, 2)]
+                id_data = int(mat_data['images'][0][i])
+
+                boxes_test.append(boxes_data.astype(np.uint16))
+                scores_test.append(scores_data.astype(np.float32))
+                ids_test.append(id_data)
+            print("saving to:{}, len={}".format(new_path1, len(ids_test)))
+            save_object(
+                dict(boxes=boxes_test, scores=boxes_test, indexes=ids_test),
+                new_path1)
