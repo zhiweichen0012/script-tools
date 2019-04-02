@@ -3,7 +3,7 @@
 
 <u>convert mat file to pkl file.</u>
 
-run in the environment whith python3, while save the pkl could run python2.
+run in the environment with python3, while save the pkl could run python2.
 
 --mode: train / test
 
