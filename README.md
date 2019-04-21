@@ -1,3 +1,9 @@
+<!--
+ * @Description: file content
+ * @Author: Chen Zhiwei
+ * @Date: 2019-04-20 13:03:36
+ * @LastEditTime: 2019-04-21 21:26:46
+ -->
 # script-tools
 1. show_pkl.py
 
@@ -11,6 +17,8 @@
 
 2. solve_log
 
-   to print friendly the output log of Detectron
+   to print friendly the output log of Detectron.
 
-   
+3. cropFramePeople.py
+   run python3
+   to crop pic from video according to the frame and coordinate and save it.
